@@ -1,0 +1,21 @@
+function [Q, K] = SecurityMDISimple(mu_a, mu_b ,L , Rasymm, alpha, IL, pdark, e_0, e_d, f, de, pnoise_a, pnoise_b, rep_rate)
+    pd = pdark + (pnoise_a + pnoise_b)/2;
+    L_a = L/(1 + 1/Rasymm);
+    L_b = L/(1 + Rasymm);
+    alph=alpha/(4.343);
+    nu_a = exp(-alph*L_a)*10^(-IL/10)*de;
+    nu_b = exp(-alph*L_b)*10^(-IL/10)*de;
+    Y11 = (1 - pd).^2.*(nu_a.*nu_b/2 + (2*nu_a + 2*nu_b - 3*nu_a.*nu_b).*pd + 4*(1-nu_a).*(1-nu_b).*pd.^2);
+    Q11 = mu_a*mu_b*exp(-mu_a)*exp(-mu_b)*Y11;
+    e11 = (e_0*Y11 - (e_0 - e_d)*(1 - pd).^2.*nu_a.*nu_b/2)./Y11;
+    x = sqrt(nu_a.*mu_a.*nu_b*mu_b/2);
+    mu_i = nu_a*mu_a + nu_b*mu_b;
+    I_0 = 1 + x.^2/4;
+    Q_C_rect = 2*(1 - pd).^2.*exp(-mu_i/2).*(1 - (1 - pd).*exp(-nu_a*mu_a/2)).*(1 - (1 - pd).*exp(-nu_b*mu_b/2));
+    Q_E_rect = 2*pd.*(1 - pd).^2.*exp(-mu_i/2).*(I_0 - (1-pd).*exp(-mu_i/2));
+    Qrect = Q_C_rect + Q_E_rect;
+    Erect = (e_d*Q_C_rect + (1 - e_d)*Q_E_rect)./Qrect;
+    Q = Erect;
+    K = Q11.*(1 - hbin(e11)) - Qrect*f.*hbin(Erect);
+    K = rep_rate*K;
+end
